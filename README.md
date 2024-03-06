@@ -1,2 +1,2 @@
 # RiaMoneyTransfer
-Code assessment for ria money transfer
+Code assessment for ria money transfer - REST Server
