@@ -1,23 +1,32 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.IO;
 
 namespace RiaMoneyTransfer.DataAccess.FileAccess
 {
     public class ReadWriteAccess : IReadWriteAccess
     {
-        public async Task<List<T>> ReadDataAsync<T>()
+        private static object _lock = new object();
+
+        public Task<List<T>> ReadDataAsync<T>()
         {
+            var returnList = new List<T>();
             try
             {
                 var path = GetFilePath();
                 if (!File.Exists(path))
                 {
-                    throw new Exception("No customers found.");
+                    return Task.FromResult(returnList);
                 }
-                using (var reader = new StreamReader(path))
+                lock (_lock)
                 {
-                    return JsonConvert.DeserializeObject<List<T>>(await reader.ReadToEndAsync());
-                };
+                    using (var reader = new StreamReader(path))
+                    {
+                        returnList = JsonConvert.DeserializeObject<List<T>>($"[{reader.ReadToEnd()}]");
+                        reader.Close();
+                        return Task.FromResult(returnList);
+                    };
+                }
             }
             catch (Exception e)
             {
@@ -25,7 +34,7 @@ namespace RiaMoneyTransfer.DataAccess.FileAccess
             }
         }
 
-        public async Task WriteDataAsync(string data)
+        public Task WriteDataAsync(string data)
         {
             try
             {
@@ -34,15 +43,20 @@ namespace RiaMoneyTransfer.DataAccess.FileAccess
                 {
                     File.CreateText(path);
                 }
-                using (var writer = new StreamWriter(path))
+                lock (_lock)
                 {
-                    await writer.WriteLineAsync(data);
-                };
+                    using (var writer = new StreamWriter(path, true))
+                    {
+                        writer.WriteLine(data + ",");
+                        writer.Close();
+                    };
+                }
             }
             catch (Exception e)
             {
                 throw new Exception(e.Message);
             }
+            return Task.CompletedTask;
         }
 
         private string GetFilePath()

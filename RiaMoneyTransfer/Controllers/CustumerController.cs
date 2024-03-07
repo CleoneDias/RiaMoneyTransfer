@@ -20,7 +20,7 @@ namespace RiaMoneyTransfer.Controllers
         {
             try
             {
-                return Ok(await _data.ReadCustomerAsync());
+                return Ok(await _data.GetCustomerAsync());
             }
             catch (Exception ex)
             {
@@ -45,9 +45,8 @@ namespace RiaMoneyTransfer.Controllers
                     };
                     customers.Add(customer);
                 }
-                var sortedCustomers = await Customer.ValidateAsync(_data, customers);
-                var customerData = JsonConvert.SerializeObject(sortedCustomers);
-                await _data.WriteCustomerAsync(customerData);
+                Customer.ValidateAsync(_data, customers);
+                await _data.InsertCustomerAsync(customers);
                 return Ok();
             }
             catch (Exception ex)
